@@ -1,0 +1,1 @@
+from demabets import create_app

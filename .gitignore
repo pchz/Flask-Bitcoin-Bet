@@ -1,0 +1,6 @@
+# Created by .ignore support plugin (hsz.mobi)
+.env.prod
+.env.prod.db
+.env.prod.backup
+.env.prod.proxy
+/services/web/.idea/

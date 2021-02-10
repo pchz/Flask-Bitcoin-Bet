@@ -1,0 +1,71 @@
+version: '3.7'
+
+services:
+  web:
+    build: ./services/web
+    command: gunicorn --bind 0.0.0.0:5000 --worker-class eventlet -w 1 demabets:create_app()
+    volumes:
+      - static_volume:/home/app/web/demabets/static
+      - migrations_volume:/home/app/web/migrations
+    expose:
+      - 5000
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - db
+      - docker-host
+
+  db:
+    image: postgres:12-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.prod.db
+
+  pgbackups:
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    volumes:
+      - /var/opt/pgbackups:/backups
+    links:
+      - db
+    depends_on:
+      - db
+    env_file:
+      ./.env.prod.backup
+
+  nginx:
+    build: ./services/nginx
+    volumes:
+      - static_volume:/home/app/web/demabets/static
+    ports:
+      - 80:80
+    depends_on:
+      - web
+
+  pgadmin:
+    image: dpage/pgadmin4:4.18
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@demabets.com
+      PGADMIN_DEFAULT_PASSWORD: secret
+      PGADMIN_LISTEN_PORT: 6000
+    ports:
+      - "8080:6000"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    links:
+      - "db:pgsql-server"
+
+  docker-host:
+    image: qoomon/docker-host
+    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+    mem_limit: 8M
+    restart: on-failure
+
+volumes:
+  postgres_data:
+  static_volume:
+  pgadmin-data:
+  migrations_volume:
